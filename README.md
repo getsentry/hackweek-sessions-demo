@@ -1,36 +1,69 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Sentry Next.js demo
 
-## Getting Started
+A small Next.js 16 (App Router) app instrumented with the Sentry Next.js SDK.
+It covers **errors, tracing, logs and metrics**. Session Replay is deliberately
+left out.
 
-First, run the development server:
+## Running it
 
 ```bash
+npm install
+cp .env.example .env.local   # paste your DSN into NEXT_PUBLIC_SENTRY_DSN
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+The app runs without a DSN — the SDK just no-ops instead of sending, so you can
+click through everything before wiring up a project.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## What's where
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Path | What it demonstrates |
+| --- | --- |
+| `/` | Overview, plus a button that fetches `/api/stats` inside a manual span |
+| `/orders` | Server-rendered first paint, then buttons that GET/POST route handlers |
+| `/telemetry` | Every log level and all three metric types, from browser and server |
+| `/errors` | Six failure modes, each reaching Sentry by a different path |
+| `/reports` | Server component with manual spans, plus two server actions |
 
-## Learn More
+### API routes
 
-To learn more about Next.js, take a look at the following resources:
+| Route | Behaviour |
+| --- | --- |
+| `GET /api/orders` | Lists orders; counter, gauge, latency distribution |
+| `POST /api/orders` | Creates one (201) or rejects a bad payload (400) |
+| `GET /api/stats` | Nested cache span; four gauges |
+| `POST /api/telemetry` | Emits a server log at a requested level plus one metric |
+| `POST /api/checkout` | Flaky — ~35% return 402 with a `PaymentDeclinedError` |
+| `GET /api/boom` | Always throws, reported via `onRequestError` |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Sentry wiring
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+| File | Runtime |
+| --- | --- |
+| `src/instrumentation-client.ts` | Browser. Also exports `onRouterTransitionStart` for navigation spans. |
+| `sentry.server.config.ts` | Node |
+| `sentry.edge.config.ts` | Edge |
+| `src/instrumentation.ts` | Loads the right config per runtime; exports `onRequestError` |
+| `next.config.ts` | `withSentryConfig` for source maps |
+| `src/app/error.tsx`, `src/app/global-error.tsx` | React error boundaries |
 
-## Deploy on Vercel
+All three runtimes set `tracesSampleRate: 1.0`, `enableLogs: true` and
+`enableMetrics: true`. No `replayIntegration` is registered anywhere.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Two things worth knowing
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- **`tunnelRoute` is not enabled.** Under Next 16's Turbopack build the tunnel
+  endpoint isn't generated, so setting it makes the browser POST events to a
+  404 and they disappear silently. Events go straight to ingest instead. If you
+  need the tunnel to dodge ad blockers, verify the route actually responds
+  before relying on it.
+- **Source maps** need `SENTRY_ORG`, `SENTRY_PROJECT` and `SENTRY_AUTH_TOKEN` at
+  build time. Without them the build still succeeds, it just skips the upload.
+
+## Verified
+
+`npm run build`, `npx tsc --noEmit` and `npm run lint` all pass. Server-side
+signals were confirmed end to end by pointing the DSN at a local stand-in for
+Sentry ingest and driving every route: transaction, `trace_metric`, `log` and
+error `event` envelopes all arrived. Browser-side emission was not exercised by
+an automated test — click through `/telemetry` and `/errors` to confirm it.
