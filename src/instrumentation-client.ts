@@ -28,6 +28,7 @@ Sentry.init({
     Sentry.consoleLoggingIntegration({ levels: ["warn", "error"] }),
     Sentry.replayIntegration(),
     Sentry.browserProfilingIntegration(),
+    Sentry.feedbackIntegration(),
   ],
 
   // Errors go through the event pipeline, not span streaming, so tag them here.
