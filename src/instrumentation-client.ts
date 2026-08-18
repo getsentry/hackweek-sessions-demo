@@ -47,5 +47,6 @@ const client = Sentry.getClient();
 client?.on("processSpan", attachSessionId);
 client?.on("beforeCaptureLog", attachSessionId);
 client?.on("processMetric", attachSessionId);
+client?.on("beforeSendFeedback", attachSessionIdToEvent);
 
 export const onRouterTransitionStart = Sentry.captureRouterTransitionStart;
