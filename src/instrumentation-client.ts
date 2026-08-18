@@ -36,17 +36,14 @@ Sentry.init({
     Sentry.browserProfilingIntegration(),
     Sentry.feedbackIntegration(),
   ],
-
-  // Errors go through the event pipeline, not span streaming, so tag them here.
-  beforeSend(event) {
-    return attachSessionIdToEvent(event);
-  },
 });
 
 const client = Sentry.getClient();
 client?.on("processSpan", attachSessionId);
 client?.on("beforeCaptureLog", attachSessionId);
 client?.on("processMetric", attachSessionId);
-client?.on("beforeSendFeedback", attachSessionIdToEvent);
+
+// Add session id to all events. This covers errors, feedback, and replays.
+Sentry.addEventProcessor(attachSessionIdToEvent);
 
 export const onRouterTransitionStart = Sentry.captureRouterTransitionStart;
