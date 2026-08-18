@@ -55,7 +55,6 @@ client?.on("beforeEnvelope", (envelope) => {
     if (itemHeader.type === "profile_chunk") {
       (payload as Record<string, unknown>)[SESSION_ID_KEY] = sid;
     }
-    console.log("[beforeEnvelope]", itemHeader, payload);
   }
 });
 
