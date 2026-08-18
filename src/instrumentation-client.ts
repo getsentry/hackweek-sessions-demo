@@ -17,9 +17,13 @@ Sentry.init({
   tracesSampleRate: 1.0,
   tracePropagationTargets: ["localhost", /^\/api\//],
 
+  replaysSessionSampleRate: 1.0,
+  replaysOnErrorSampleRate: 1.0,
+
   integrations: [
     // Mirror console.warn/console.error into Sentry logs.
     Sentry.consoleLoggingIntegration({ levels: ["warn", "error"] }),
+    Sentry.replayIntegration(),
   ],
 
   // Errors go through the event pipeline, not span streaming, so tag them here.
