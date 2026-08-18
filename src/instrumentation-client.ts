@@ -9,6 +9,12 @@ const attachSessionId = (item: { attributes?: Record<string, unknown> }) => {
   if (sid) (item.attributes ??= {})[SESSION_ID_KEY] = sid;
 };
 
+const attachSessionIdToEvent = <E extends Sentry.Event>(event: E): E => {
+  const sid = getSessionId();
+  if (sid) event.tags = { [SESSION_ID_KEY]: sid, ...event.tags };
+  return event;
+};
+
 Sentry.init({
   dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
   environment:
@@ -33,9 +39,7 @@ Sentry.init({
 
   // Errors go through the event pipeline, not span streaming, so tag them here.
   beforeSend(event) {
-    const sid = getSessionId();
-    if (sid) event.tags = { [SESSION_ID_KEY]: sid, ...event.tags };
-    return event;
+    return attachSessionIdToEvent(event);
   },
 });
 
