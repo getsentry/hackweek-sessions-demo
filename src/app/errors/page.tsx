@@ -33,8 +33,12 @@ export default function ErrorsPage() {
 
   function handled() {
     const error = new DemoError("Handled client-side exception");
-    const id = Sentry.captureException(error, {
-      tags: { demo_kind: "handled" },
+    const id = Sentry.withScope((scope) => {
+      scope.addAttachment({
+        filename: "activity-log.json",
+        data: JSON.stringify(entries, null, 2),
+      });
+      return Sentry.captureException(error, { tags: { demo_kind: "handled" } });
     });
     track("handled");
     push("error", `captureException → event ${id.slice(0, 8)}…`);
@@ -83,7 +87,13 @@ export default function ErrorsPage() {
         throw new DemoError(`Request failed with ${res.status}`);
       }
     } catch (err) {
-      Sentry.captureException(err, { tags: { demo_kind: "failed-fetch" } });
+      Sentry.withScope((scope) => {
+        scope.addAttachment({
+          filename: "activity-log.json",
+          data: JSON.stringify(entries, null, 2),
+        });
+        Sentry.captureException(err, { tags: { demo_kind: "failed-fetch" } });
+      });
       push("error", `Captured: ${err}`);
     } finally {
       setBusy(false);
