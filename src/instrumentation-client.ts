@@ -20,10 +20,14 @@ Sentry.init({
   replaysSessionSampleRate: 1.0,
   replaysOnErrorSampleRate: 1.0,
 
+  profileSessionSampleRate: 1.0,
+  profileLifecycle: "trace",
+
   integrations: [
     // Mirror console.warn/console.error into Sentry logs.
     Sentry.consoleLoggingIntegration({ levels: ["warn", "error"] }),
     Sentry.replayIntegration(),
+    Sentry.browserProfilingIntegration(),
   ],
 
   // Errors go through the event pipeline, not span streaming, so tag them here.
