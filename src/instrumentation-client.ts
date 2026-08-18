@@ -46,4 +46,17 @@ client?.on("processMetric", attachSessionId);
 // Add session id to all events. This covers errors, feedback, and replays.
 Sentry.addEventProcessor(attachSessionIdToEvent);
 
+// Profile chunks have no tags/attributes and there is no specific hook we can use to attach the session id.
+// Instead, filter directly from the envelope and attach the session id top level.
+client?.on("beforeEnvelope", (envelope) => {
+  const sid = getSessionId();
+  if (!sid) return;
+  for (const [itemHeader, payload] of envelope[1]) {
+    if (itemHeader.type === "profile_chunk") {
+      (payload as Record<string, unknown>)[SESSION_ID_KEY] = sid;
+    }
+    console.log("[beforeEnvelope]", itemHeader, payload);
+  }
+});
+
 export const onRouterTransitionStart = Sentry.captureRouterTransitionStart;
