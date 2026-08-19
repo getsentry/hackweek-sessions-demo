@@ -1,15 +1,29 @@
 "use client";
 
 import * as Sentry from "@sentry/nextjs";
-import { useCallback, useState } from "react";
+import { useCallback, useState, useSyncExternalStore } from "react";
 import { ActivityLog, useActivityLog } from "@/components/activity-log";
+import { PageViewLog } from "@/components/page-view-log";
 import { Button, Card, PageHeader } from "@/components/ui";
 import { formatMoney, type Order } from "@/lib/orders";
+import {
+  clearStorefrontPreview,
+  getServerStorefrontPreviewBps,
+  getStorefrontPreviewBps,
+  netAmountCents,
+  subscribeStorefrontPreview,
+  writeStorefrontPreview,
+} from "@/lib/partner-discount";
 
 export function OrdersClient({ initialOrders }: { initialOrders: Order[] }) {
   // Rendered on the server first, then kept fresh through the API.
   const [orders, setOrders] = useState<Order[]>(initialOrders);
   const [busy, setBusy] = useState<string | null>(null);
+  const discountBps = useSyncExternalStore(
+    subscribeStorefrontPreview,
+    getStorefrontPreviewBps,
+    getServerStorefrontPreviewBps,
+  );
   const { entries, push, clear } = useActivityLog();
 
   const refresh = useCallback(
@@ -76,6 +90,44 @@ export function OrdersClient({ initialOrders }: { initialOrders: Order[] }) {
     }
   }
 
+  function applyPartnerDiscount() {
+    const next = { discountBps: 10000, appliedAt: new Date().toISOString() };
+    Sentry.startSpan(
+      {
+        name: "apply partner discount",
+        op: "ui.action.click",
+        attributes: {
+          "storefront.discount_bps": next.discountBps,
+          page: "orders",
+        },
+      },
+      () => {
+        writeStorefrontPreview(next);
+        Sentry.logger.info("Applied storefront partner discount", {
+          origin: "browser",
+          page: "orders",
+          discountBps: next.discountBps,
+          appliedAt: next.appliedAt,
+        });
+        Sentry.addBreadcrumb({
+          category: "storefront",
+          message: "Updated storefront preview",
+          level: "info",
+        });
+        push("success", "Partner discount applied for this tab");
+      },
+    );
+  }
+
+  function clearPartnerDiscount() {
+    clearStorefrontPreview();
+    Sentry.logger.info("Cleared storefront partner discount", {
+      origin: "browser",
+      page: "orders",
+    });
+    push("info", "Partner discount cleared");
+  }
+
   async function sendMalformed() {
     setBusy("malformed");
     try {
@@ -102,11 +154,38 @@ export function OrdersClient({ initialOrders }: { initialOrders: Order[] }) {
 
   return (
     <div className="space-y-8">
+      <PageViewLog page="orders" />
       <PageHeader title="Orders">
         Every button here makes a real fetch to a route handler. The browser
         span and the server span share a trace, so you can follow a click all
         the way into the simulated database call.
       </PageHeader>
+
+      <Card
+        title="Partner discount"
+        description="Preview this tab as a partner account. Totals update immediately and stay until you clear them or close the tab."
+      >
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            variant="primary"
+            onClick={applyPartnerDiscount}
+            disabled={busy !== null || discountBps === 10000}
+          >
+            Apply partner discount
+          </Button>
+          <Button
+            onClick={clearPartnerDiscount}
+            disabled={busy !== null || discountBps === 0}
+          >
+            Clear discount
+          </Button>
+          <span className="text-sm text-muted">
+            {discountBps === 0
+              ? "No discount"
+              : `Partner rate: ${discountBps / 100}%`}
+          </span>
+        </div>
+      </Card>
 
       <Card
         title="Actions"
@@ -162,7 +241,9 @@ export function OrdersClient({ initialOrders }: { initialOrders: Order[] }) {
                     </span>
                   </td>
                   <td className="px-4 py-2.5 text-right font-mono text-xs">
-                    {formatMoney(order.amountCents)}
+                    {formatMoney(
+                      netAmountCents(order.amountCents, discountBps),
+                    )}
                   </td>
                 </tr>
               ))

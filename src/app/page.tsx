@@ -34,8 +34,8 @@ export default function Home() {
     <div className="space-y-8">
       <PageHeader title="Sentry Next.js demo">
         A small app wired up with the Sentry Next.js SDK across the browser,
-        Node and edge runtimes. Errors, tracing, logs and metrics are all
-        enabled; Session Replay is deliberately left out.
+        Node and edge runtimes. Use the header to start and stop the SDK
+        session and Session Replay independently.
       </PageHeader>
 
       <HealthPanel />

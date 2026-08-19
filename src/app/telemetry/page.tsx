@@ -3,6 +3,7 @@
 import * as Sentry from "@sentry/nextjs";
 import { useState } from "react";
 import { ActivityLog, useActivityLog } from "@/components/activity-log";
+import { PageViewLog } from "@/components/page-view-log";
 import { Button, Card, PageHeader } from "@/components/ui";
 
 const LEVELS = ["trace", "debug", "info", "warn", "error", "fatal"] as const;
@@ -94,6 +95,7 @@ export default function TelemetryPage() {
 
   return (
     <div className="space-y-8">
+      <PageViewLog page="telemetry" />
       <PageHeader title="Telemetry">
         Logs and metrics, emitted on demand. Everything on this page is a real
         SDK call — the activity list below just mirrors what was sent so you

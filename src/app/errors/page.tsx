@@ -3,6 +3,7 @@
 import * as Sentry from "@sentry/nextjs";
 import { useState } from "react";
 import { ActivityLog, useActivityLog } from "@/components/activity-log";
+import { PageViewLog } from "@/components/page-view-log";
 import { Button, Card, PageHeader } from "@/components/ui";
 
 class DemoError extends Error {
@@ -102,6 +103,7 @@ export default function ErrorsPage() {
 
   return (
     <div className="space-y-8">
+      <PageViewLog page="errors" />
       <PageHeader title="Errors">
         Six different failure modes, each reaching Sentry through a different
         path — manual capture, the global handler, the React error boundary and

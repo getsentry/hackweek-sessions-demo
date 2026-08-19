@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { PageHeader, Stat } from "@/components/ui";
 import { formatMoney } from "@/lib/orders";
 import { listOrders } from "@/lib/store";
+import { CategoryMix } from "./category-mix";
 import { ReportActions } from "./report-actions";
 
 export const dynamic = "force-dynamic";
@@ -51,6 +52,8 @@ export default function ReportsPage() {
       >
         <Summary />
       </Suspense>
+
+      <CategoryMix />
 
       <ReportActions />
     </div>

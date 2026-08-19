@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { SessionControls } from "@/components/session-controls";
 
 const LINKS = [
   { href: "/", label: "Overview" },
@@ -46,6 +47,7 @@ export function SiteNav() {
           })}
         </nav>
       </div>
+      <SessionControls />
     </header>
   );
 }

@@ -17,7 +17,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Sentry Next.js Demo",
   description:
-    "A small Next.js app instrumented with Sentry errors, tracing, logs and metrics.",
+    "A small Next.js app instrumented with Sentry errors, tracing, logs, metrics and Session Replay.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
@@ -34,8 +34,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         </main>
         <footer className="border-t border-border">
           <div className="mx-auto max-w-5xl px-6 py-4 text-xs text-muted">
-            Errors · Tracing · Logs · Metrics. Session Replay is intentionally
-            off.
+            Errors · Tracing · Logs · Metrics · Replay
           </div>
         </footer>
       </body>
